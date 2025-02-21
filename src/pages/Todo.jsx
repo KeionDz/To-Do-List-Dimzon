@@ -1,13 +1,15 @@
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense, lazy } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import EditTask from "./EditTask";
 import { ListChecks } from "lucide-react";
+
+const EditTask = lazy(() => import("./EditTask"));
 
 const Todo = () => {
   const [todo, setTodo] = useState(null);
+  const [loading, setLoading] = useState(true);
   const { id } = useParams();
   const navigate = useNavigate();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -20,6 +22,8 @@ const Todo = () => {
         setTodo(response.data);
       } catch (error) {
         console.error("Error fetching todo:", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchTodo();
@@ -39,10 +43,6 @@ const Todo = () => {
     }
   };
 
-  if (!todo) {
-    return <p className="text-center text-gray-400">Loading...</p>;
-  }
-
   return (
     <Suspense fallback={<p className="text-center text-gray-400">Loading...</p>}>
       <div className="flex justify-center items-center min-h-screen bg-[#121212] p-6">
@@ -57,9 +57,15 @@ const Todo = () => {
 
           {/* Content */}
           <CardContent className="p-5 text-gray-300 text-lg">
-            <h2 className="text-2xl font-semibold text-white mb-3">{todo.title}</h2>
-            <p className="text-gray-400 mb-4">{todo.date}</p>
-            <p>{todo.description}</p>
+            {loading ? (
+              <p className="text-gray-500 animate-pulse">Loading task details...</p>
+            ) : (
+              <>
+                <h2 className="text-2xl font-semibold text-white mb-3">{todo?.title}</h2>
+                <p className="text-gray-400 mb-4">{todo?.date}</p>
+                <p>{todo?.description}</p>
+              </>
+            )}
           </CardContent>
 
           {/* Footer */}
@@ -87,7 +93,9 @@ const Todo = () => {
         {/* Edit Task Modal */}
         {isEditModalOpen && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-lg">
-            <EditTask task={todo} onClose={() => setIsEditModalOpen(false)} onTaskUpdated={handleEditTask} />
+            <Suspense fallback={<p className="text-gray-400">Loading editor...</p>}>
+              <EditTask task={todo} onClose={() => setIsEditModalOpen(false)} onTaskUpdated={handleEditTask} />
+            </Suspense>
           </div>
         )}
 
